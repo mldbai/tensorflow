@@ -28,6 +28,8 @@ limitations under the License.
 
 namespace tensorflow {
 
+class StepStats;
+
 /// \brief A Session instance lets a caller drive a TensorFlow graph
 /// computation.
 ///
@@ -113,7 +115,20 @@ class Session {
   virtual Status Run(const std::vector<std::pair<string, Tensor> >& inputs,
                      const std::vector<string>& output_tensor_names,
                      const std::vector<string>& target_node_names,
-                     std::vector<Tensor>* outputs) = 0;
+                     std::vector<Tensor>* outputs)
+  {
+      return RunWithStats(inputs, output_tensor_names, target_node_names, outputs, nullptr);
+  }
+
+  /// \brief Run with tracing enabled
+  virtual Status RunWithStats(const std::vector<std::pair<string, Tensor> >& inputs,
+                              const std::vector<string>& output_tensor_names,
+                              const std::vector<string>& target_node_names,
+                              std::vector<Tensor>* outputs,
+                              StepStats * stats)
+  {
+      return Run(inputs, output_tensor_names, target_node_names, outputs);
+  }
 
   /// \brief Closes this session.
   ///

@@ -46,10 +46,11 @@ class DirectSession : public Session {
 
   ::tensorflow::Status Create(const GraphDef& graph) override;
   ::tensorflow::Status Extend(const GraphDef& graph) override;
-  ::tensorflow::Status Run(const std::vector<std::pair<string, Tensor>>& inputs,
-                           const std::vector<string>& output_names,
-                           const std::vector<string>& target_nodes,
-                           std::vector<Tensor>* outputs) override;
+  ::tensorflow::Status RunWithStats(const std::vector<std::pair<string, Tensor>>& inputs,
+                                    const std::vector<string>& output_names,
+                                    const std::vector<string>& target_nodes,
+                                    std::vector<Tensor>* outputs,
+                                    StepStats * stats) override;
   ::tensorflow::Status Close() override;
 
  private:

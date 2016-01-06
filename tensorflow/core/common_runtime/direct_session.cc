@@ -39,6 +39,7 @@ limitations under the License.
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/lib/strings/strcat.h"
 #include "tensorflow/core/platform/logging.h"
+#include "tensorflow/core/platform/tracing.h"
 #include "tensorflow/core/platform/port.h"
 #include "tensorflow/core/public/status.h"
 #include "tensorflow/core/public/tensor.h"
@@ -186,10 +187,11 @@ Status DirectSession::ExtendLocked(const GraphDef& graph) {
   return Status::OK();
 }
 
-Status DirectSession::Run(const std::vector<std::pair<string, Tensor>>& inputs,
-                          const std::vector<string>& output_names,
-                          const std::vector<string>& target_nodes,
-                          std::vector<Tensor>* outputs) {
+Status DirectSession::RunWithStats(const std::vector<std::pair<string, Tensor>>& inputs,
+                                   const std::vector<string>& output_names,
+                                   const std::vector<string>& target_nodes,
+                                   std::vector<Tensor>* outputs,
+                                   StepStats * stats) {
   {
     mutex_lock l(graph_def_lock_);
     if (!graph_created_) {
@@ -237,10 +239,16 @@ Status DirectSession::Run(const std::vector<std::pair<string, Tensor>>& inputs,
         executors_done.Notify();
       });
 
+  StepStatsCollector statsCollector(stats);
+
   Executor::Args args;
   args.rendezvous = rendez;
   args.cancellation_manager = cancellation_manager_;
   args.runner = [this](Executor::Args::Closure c) { SchedClosure(c); };
+  if (stats)
+      args.stats_collector = &statsCollector;
+
+
 
   for (auto device_executor : executors_and_keys->device_executors) {
     Executor* exec = device_executor.second;

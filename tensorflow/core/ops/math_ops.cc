@@ -188,6 +188,24 @@ REGISTER_OP("Tanh")
 Computes hyperbolic tangent of `x` element-wise.
 )doc");
 
+REGISTER_OP("Lgamma")
+    .UNARY()
+    .Doc(R"doc(
+Computes the log of the absolute value of Gamma of `x` element-wise.
+)doc");
+
+REGISTER_OP("Erf")
+    .UNARY()
+    .Doc(R"doc(
+Computes the Gauss error function of `x` element-wise.
+)doc");
+
+REGISTER_OP("Erfc")
+    .UNARY()
+    .Doc(R"doc(
+Computes the complementary error function of `x` element-wise.
+)doc");
+
 REGISTER_OP("Sigmoid")
     .UNARY()
     .Doc(R"doc(
@@ -1069,6 +1087,28 @@ For example:
 # tensor 'in' is [-2.25 + 4.75j, 3.25 + 5.75j]
 tf.conj(in) ==> [-2.25 - 4.75j, 3.25 - 5.75j]
 ```
+)doc");
+
+REGISTER_OP("FFT2D")
+    .Input("in: complex64")
+    .Output("out: complex64")
+    .Doc(R"doc(
+Compute the 2-dimensional discrete Fourier Transform.
+
+in: A complex64 matrix.
+out: The 2D Fourier Transform of `in`.
+
+)doc");
+
+REGISTER_OP("IFFT2D")
+    .Input("in: complex64")
+    .Output("out: complex64")
+    .Doc(R"doc(
+Compute the inverse 2-dimensional discrete Fourier Transform.
+
+in: A complex64 matrix.
+out: The inverse 2D Fourier Transform of `in`.
+
 )doc");
 
 }  // namespace tensorflow

@@ -486,7 +486,7 @@ def convert_to_tensor(value, dtype=None, name=None, as_ref=False):
 
   ```python
   import numpy as np
-  array = np.random.rand((32, 100, 100))
+  array = np.random.rand(32, 100, 100)
 
   def my_func(arg):
     arg = tf.convert_to_tensor(arg, dtype=tf.float32)
@@ -540,6 +540,35 @@ def convert_to_tensor(value, dtype=None, name=None, as_ref=False):
   raise TypeError("%sCannot convert %r with type %s to Tensor: "
                   "no conversion function registered."
                   % (error_prefix, value, type(value)))
+
+
+def convert_n_to_tensor(values, dtype=None, name=None, as_ref=False):
+  """Converts `values` to a list of `Tensor` objects.
+
+  Args:
+    values: A list of objects that can be consumed by `tf.convert_to_tensor()`.
+    dtype: (Optional.) The required `DType` of the returned `Tensor` objects.
+    name: (Optional.) A name prefix to used when a new `Tensor` is
+      created, in which case element `i` will be given the name `name
+      + '_' + i`.
+    as_ref: True if the caller wants the results as ref tensors.
+
+  Returns:
+    A list of `Tensor` and/or `IndexedSlices` objects.
+
+  Raises:
+    TypeError: If no conversion function is registered for an element in
+      `values`.
+    RuntimeError: If a registered conversion function returns an invalid
+      value.
+  """
+  if not isinstance(values, collections.Sequence):
+    raise TypeError("values must be a list.")
+  ret = []
+  for i, value in enumerate(values):
+    n = None if name is None else "%s_%d" % (name, i)
+    ret.append(convert_to_tensor(value, dtype=dtype, name=n, as_ref=as_ref))
+  return ret
 
 
 def convert_to_tensor_or_indexed_slices(value, dtype=None, name=None,
@@ -896,7 +925,9 @@ def _NodeDef(op_type, name, device=None, attrs=None):
     name: Value for the "name" attribute of the NodeDef proto.
     device: string, device, or function from NodeDef to string.
       Value for the "device" attribute of the NodeDef proto.
-    attrs: optional list for the "attr" attribute of the NodeDef proto.
+    attrs: Optional dictionary where the key is the attribute name (a string)
+      and the value is the respective "attr" attribute of the NodeDef proto (an
+      AttrValue).
 
   Returns:
     A graph_pb2.NodeDef protocol buffer.
@@ -1488,8 +1519,8 @@ def set_shapes_for_outputs(op):
   shapes = shape_func(op)
   if len(op.outputs) != len(shapes):
     raise RuntimeError(
-        "Shape function for op %s returned %g shapes but expecting %g" %
-        (op, len(op.outputs), len(shapes)))
+        "Shape function for op %s returned %d shapes but expected %d" %
+        (op, len(shapes), len(op.outputs)))
   for output, s in zip(op.outputs, shapes):
     output.set_shape(s)
 
@@ -1793,8 +1824,10 @@ class Graph(object):
         reference-typed inputs must specify `input_types` explicitly.
       name: (Optional.) A string name for the operation. If not specified, a
         name is generated based on `op_type`.
-      attrs: (Optional.) A list of `AttrValue` protos for the `attr` field of
-        the `NodeDef` proto that will represent the operation.
+      attrs: (Optional.) A dictionary where the key is the attribute name (a
+        string) and the value is the respective `attr` attribute of the
+        `NodeDef` proto that will represent the operation (an `AttrValue`
+        proto).
       op_def: (Optional.) The `OpDef` proto that describes the `op_type` that
         the operation will have.
       compute_shapes: (Optional.) If True, shape inference will be performed
@@ -2214,7 +2247,7 @@ class Graph(object):
     """
     try:
       old_stack = self._name_stack
-      if not name:  # Both for name=None nad name="" we re-set to empty scope.
+      if not name:  # Both for name=None and name="" we re-set to empty scope.
         new_stack = (None, None)
       elif name and name[-1] == "/":
         new_stack = (name[:-1], name[:-1])
@@ -2730,7 +2763,7 @@ def device(dev):
   """Wrapper for `Graph.device()` using the default graph.
 
   See
-  [`Graph.name_scope()`](../../api_docs/python/framework.md#Graph.name_scope)
+  [`Graph.device()`](../../api_docs/python/framework.md#Graph.device)
   for more details.
 
   Args:
@@ -3118,6 +3151,10 @@ class GraphKeys(object):
     produce input for a computation. See
     [`tf.start_queue_runners()`](../../api_docs/python/train.md#start_queue_runners)
     for more details.
+  * `MOVING_AVERAGE_VARIABLES`: the subset of `Variable` objects that will also
+    keep moving averages.  See
+    [`tf.moving_average_variables()`](../../api_docs/python/state_ops.md#moving_average_variables)
+    for more details.
   """
 
   # Key to collect Variable objects that must be saved and restored
@@ -3132,6 +3169,11 @@ class GraphKeys(object):
   QUEUE_RUNNERS = "queue_runners"
   # Key to collect table initializers.
   TABLE_INITIALIZERS = "table_initializer"
+  # Key to collect asset filepaths. An asset represents an external resource
+  # like a vocabulary file.
+  ASSET_FILEPATHS = "asset_filepaths"
+  # Key to collect Variable objects that keep moving averages.
+  MOVING_AVERAGE_VARIABLES = "moving_average_variables"
 
 
 def add_to_collection(name, value):

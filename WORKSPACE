@@ -19,6 +19,13 @@ new_http_archive(
   build_file = "google/protobuf/gmock.BUILD",
 )
 
+new_http_archive(
+  name = "eigen_archive",
+  url = "https://bitbucket.org/eigen/eigen/get/a0661a2.tar.gz",
+  sha256 = "d4d13995a0b3a2d80189f83d28647eb35819a478522149c15a761d91f53579b1",
+  build_file = "eigen.BUILD",
+)
+
 bind(
   name = "gtest",
   actual = "@gmock_archive//:gtest",

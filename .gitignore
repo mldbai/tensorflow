@@ -19,3 +19,7 @@ node_modules
 *.pyc
 __pycache__
 *.swp
+*.pb.h
+*.pb.cc
+tensorflow/cc/ops/*_ops.h
+tensorflow/cc/ops/*_ops.cc

@@ -15,3 +15,7 @@ node_modules
 __pycache__
 *.swp
 .vscode/
+*.pb.h
+*.pb.cc
+tensorflow/cc/ops/*_ops.h
+tensorflow/cc/ops/*_ops.cc

@@ -25,3 +25,13 @@ node_modules
 /_python_build
 *.pyc
 __pycache__
+*.pb.h
+*.pb.cc
+*.pb_text.h
+*.pb_text-impl.h
+*.pb_text.cc
+*~
+/tensorflow/cc/ops/*_ops.h
+/tensorflow/cc/ops/*_ops.cc
+
+

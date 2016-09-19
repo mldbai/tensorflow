@@ -344,12 +344,12 @@ EIGEN_STRONG_INLINE QInt8 predux_max<Packet32q8i>(const Packet32q8i& a) {
 
 // Vectorized scaling of Packet32q8i by float.
 template<>
-struct scalar_multiple2_op<QInt32, double> {
+struct scalar_product_op<QInt32, double> {
   typedef Packet8q32i Packet1;
   typedef typename scalar_product_traits<QInt32, double>::ReturnType result_type;
   typedef typename packet_traits<result_type>::type packet_result_type;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_multiple2_op(const scalar_multiple2_op& other) : m_other(other.m_other) { }
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_multiple2_op(const double& other) : m_other(other) { }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_product_op(const scalar_product_op& other) : m_other(other.m_other) { }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_product_op(const double& other) : m_other(other) { }
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator() (const QInt32& a) const { return a * m_other; }
 
@@ -366,7 +366,7 @@ struct scalar_multiple2_op<QInt32, double> {
 };
 
 template <>
-struct functor_traits<scalar_multiple2_op<QInt32, double>> {
+struct functor_traits<scalar_product_op<QInt32, double>> {
   enum { Cost = 4 * NumTraits<float>::MulCost, PacketAccess = true };
 };
 

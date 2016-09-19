@@ -42,6 +42,7 @@ EIGEN_DEVICE_FUNC inline Packet pexpand_bf16_u(const Packet& from) {
 
 // Specialization non-scalar version on non-sse.
 #ifndef EIGEN_VECTORIZE_SSE2
+#if 0
 template <typename Packet>
 EIGEN_DEVICE_FUNC inline Packet4f pexpand_bf16_l(const Packet4f& from) {
   float r[4];
@@ -67,6 +68,7 @@ EIGEN_DEVICE_FUNC inline Packet4f pexpand_bf16_u(const Packet4f& from) {
   p[3] = ir[3] & 0xffff0000;
   return ploadu<Packet4f>(reinterpret_cast<float *>(p));
 }
+#endif
 #endif
 
 template <typename Packet>
@@ -113,6 +115,7 @@ EIGEN_DEVICE_FUNC inline Packet pload2bf16(
 
 // Specialization for pload4bf16 and pload2bf16 for non-sse. 
 #ifndef EIGEN_VECTORIZE_SSE2
+#if 0
 template <>
 EIGEN_STRONG_INLINE Packet4f pload4bf16<Packet4f>(const float* from) {
   tensorflow::uint32 p[4];
@@ -134,6 +137,7 @@ EIGEN_STRONG_INLINE Packet4f pload2bf16<Packet4f>(const float* from) {
   p[3] = ir[0] & 0xffff0000;
   return ploadu<Packet4f>(reinterpret_cast<float *>(p));  
 }
+#endif
 #endif
 
 #ifdef EIGEN_VECTORIZE_SSE2

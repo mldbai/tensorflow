@@ -23,3 +23,17 @@ __pycache__
 *.pb.cc
 tensorflow/cc/ops/*_ops.h
 tensorflow/cc/ops/*_ops.cc
+*.pb_text.h
+*.pb_text-impl.h
+*.pb_text.cc
+*~
+*.orig
+*.rej
+gen_*.py
+*_pb2.py
+google/
+tensorflow/python/pywrap_tensorflow.py
+tensorflow/python/tensorflow_wrap.cxx
+tensorflow/python/tf_python.py
+tensorflow/cc/ops/no_op.cc
+tensorflow/cc/ops/no_op.h

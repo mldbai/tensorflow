@@ -23,6 +23,7 @@ limitations under the License.
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
 #include "tensorflow/core/framework/tensor.h"
+#include <iostream>
 
 namespace tensorflow {
 
@@ -64,6 +65,27 @@ class BatchNormOp : public OpKernel {
                 errors::InvalidArgument("gamma must be 1-dimensional",
                                         gamma.shape().DebugString()));
 
+    auto checkTensor = [] (const Tensor & tensor,
+                           const std::string & name)
+        {
+            using namespace std;
+            auto f = tensor.flat<T>();
+            for (size_t i = 0;  i < f.size();  ++i) {
+                if (!isfinite(f(i))) {
+                    cerr << "element " << i << " with value " << f(i)
+                         << " of " << name
+                         << " is non-finite in batch norm" << endl;
+                    return;
+                }
+            }
+        };
+
+    checkTensor(input, "input");
+    checkTensor(mean, "mean");
+    checkTensor(var, "var");
+    checkTensor(beta, "beta");
+    checkTensor(gamma, "gamma");
+
     Tensor* output = nullptr;
     OP_REQUIRES_OK(context,
                    context->allocate_output(0, input.shape(), &output));
@@ -72,6 +94,8 @@ class BatchNormOp : public OpKernel {
         context->eigen_device<Device>(), input.tensor<T, 4>(), mean.vec<T>(),
         var.vec<T>(), beta.vec<T>(), gamma.vec<T>(), variance_epsilon_,
         scale_after_normalization_, output->tensor<T, 4>());
+
+    checkTensor(*output, "output");
   }
 
  private:

@@ -344,6 +344,7 @@ port::Status CudnnSupport::Init() {
                        "make sure the library loaded matches the "
                        "version you specified during compile configuration.");
       LOG(ERROR) << error;
+      return port::Status::OK();
       return port::Status{port::error::INTERNAL, error};
     }
 

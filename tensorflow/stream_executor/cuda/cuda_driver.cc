@@ -39,6 +39,9 @@ limitations under the License.
 #include "tensorflow/stream_executor/platform/port.h"
 #include "tensorflow/stream_executor/lib/inlined_vector.h"
 
+#include <cuda_runtime.h>
+//#include <helper_cuda.h>
+
 bool FLAGS_gpuexec_cuda_driver_inject_init_error = false;
 bool FLAGS_gpuexec_cuda_sync_around_driver_calls = false;
 bool FLAGS_gpuexec_cuda_device_0_only = false;
@@ -471,6 +474,35 @@ string CUDAPointersToCanAccessString(CUdeviceptr from, CUdeviceptr to) {
              : "false";
 }
 
+#if 0
+#include <iostream>
+#endif
+
+int
+cudaDeviceQuery()
+{
+    printf(" CUDA Device Query (Runtime API) version (CUDART static linking)\n\n");
+
+    int deviceCount = 0;
+    cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
+
+    if (error_id != cudaSuccess)
+    {
+        printf("cudaGetDeviceCount returned %d\n-> %s\n", (int)error_id, cudaGetErrorString(error_id));
+        printf("Result = FAIL\n");
+        return -1;
+    }
+
+    // This function call returns 0 if there are no CUDA capable devices.
+    if (deviceCount == 0)
+    {
+        printf("There are no available device(s) that support CUDA\n");
+    }
+    else
+    {
+        printf("Detected %d CUDA Capable device(s)\n", deviceCount);
+    }
+}
 
 // Actually performs the work of CUDA initialization. Wrapped up in one-time
 // execution guard.
@@ -480,9 +512,15 @@ static port::Status InternalInit() {
     LOG(ERROR) << "injecting CUDA init error; initialization will fail";
   } else if (internal::CachedDsoLoader::GetLibcudaDsoHandle().ok()) {
     // We only call cuInit if we can dynload libcuda.
+    LOG(ERROR) << "Dynamic loading cuda";
 
     res = dynload::cuInit(0 /* = flags */);
   }
+  else {
+    LOG(ERROR) << "DSO handle not OK";
+  }
+
+  cudaDeviceQuery();
 
   if (res == CUDA_SUCCESS) {
     return port::Status::OK();

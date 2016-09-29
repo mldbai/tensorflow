@@ -21,6 +21,8 @@ limitations under the License.
 #include <string.h>
 #include <map>
 #include <vector>
+#include <iostream>
+#include <fenv.h>
 #include "tensorflow/core/framework/numeric_op.h"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
@@ -58,6 +60,9 @@ struct LaunchGeneric {
                      TensorFormat data_format) {
     CHECK(data_format == FORMAT_NHWC) << "Generic conv implementation only "
                                          "supports NHWC tensor format for now.";
+    using namespace std;
+    cerr << "row_stride = " << row_stride << " col_stride = " << col_stride
+         << endl;
     if (filter.dim_size(1) == filter.dim_size(0) && filter.dim_size(0) == 1 &&
         row_stride == 1 && col_stride == 1) {
       // For 1x1 kernel, the 2D convolution is reduced to matrix
@@ -73,6 +78,8 @@ struct LaunchGeneric {
 
       Eigen::array<Eigen::IndexPair<Eigen::DenseIndex>, 1> dim_pair;
       dim_pair[0] = Eigen::IndexPair<Eigen::DenseIndex>(1, 0);
+
+      cerr << "doing it with matrix multiplication" << endl;
       functor::MatMulConvFunctor<Device, T>()(
           ctx->eigen_device<Device>(),
           output->shaped<T, 2>({conv_width, filter.dim_size(3)}),
@@ -80,6 +87,8 @@ struct LaunchGeneric {
           filter.shaped<T, 2>({filter.dim_size(2), filter.dim_size(3)}),
           dim_pair);
     } else {
+        //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+        cerr << "doing it with spatial convolution" << endl;
       functor::SpatialConvolution<Device, T>()(
           ctx->eigen_device<Device>(), output->tensor<T, 4>(),
           input.tensor<T, 4>(), filter.tensor<T, 4>(), row_stride, col_stride,
@@ -138,6 +147,28 @@ class Conv2DOp : public BinaryOp<T> {
     // Input filter is of the following dimensions:
     // [ filter_rows, filter_cols, in_depth, out_depth]
     const Tensor& filter = context->input(1);
+
+    auto checkTensor = [&] (const Tensor & tensor,
+                       const std::string & name)
+        {
+            using namespace std;
+            auto f = tensor.flat<T>();
+            for (size_t i = 0;  i < f.size();  ++i) {
+                if (!isfinite(f(i))) {
+                    cerr << "element " << i << " with value " << f(i)
+                         << " of " << name
+                         << " is non-finite in conv2d" << endl;
+                    cerr << "rows = " << GetTensorDim(strides_, data_format_, 'H') << endl;
+                    cerr << "cols = " << GetTensorDim(strides_, data_format_, 'W')
+                         << endl;
+                    return false;
+                }
+            }
+            return true;
+        };
+
+    checkTensor(input, "input");
+    checkTensor(filter, "filter");
 
     // For 2D convolution, there should be 4 dimensions.
     OP_REQUIRES(context, input.dims() == 4,
@@ -215,6 +246,9 @@ class Conv2DOp : public BinaryOp<T> {
     // [ in_batch, out_rows, out_cols, out_depth ]
     Tensor* output = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(0, out_shape, &output));
+    auto f = output->flat<T>();
+    for (size_t i = 0;  i < f.size();  ++i)
+        f(i) = T(-1234);
 
     VLOG(2) << "Conv2D: in_depth = " << in_depth
             << ", input_cols = " << input_cols
@@ -233,6 +267,46 @@ class Conv2DOp : public BinaryOp<T> {
                                     input, filter, stride_rows, stride_cols,
                                     BrainPadding2EigenPadding(padding_), output,
                                     data_format_, &conv_algorithm_map_);
+
+
+    Tensor output2(DataTypeToEnum<T>::value, out_shape);
+    f = output2.flat<T>();
+    for (size_t i = 0;  i < f.size();  ++i)
+        f(i) = T(-1234);
+    LaunchConvOp<Device, T>::launch(context, use_cudnn_, cudnn_use_autotune_,
+                                    input, filter, stride_rows, stride_cols,
+                                    BrainPadding2EigenPadding(padding_), &output2,
+                                    data_format_, &conv_algorithm_map_);
+    
+    checkTensor(*output, "output");
+    checkTensor(output2, "output2");
+
+    f = output->flat<T>();
+    auto f2 = output2.flat<T>();
+    for (size_t i = 0;  i < f.size();  ++i) {
+        using namespace std;
+        if (f(i) == T(-1234) && isfinite(f2(i)))
+            f(i) = f2(i);
+    }
+
+    {
+        int errors = 0;
+        using namespace std;
+        auto f = output->flat<T>();
+        auto f2 = output2.flat<T>();
+        for (size_t i = 0;  i < f.size();  ++i) {
+            if (f(i) != f2(i)) {
+                cerr << "differing elements " << i << ": " << f(i)
+                     << " and " << f2(i) << endl;
+                cerr << "f is from " << (void *)output->tensor_data().data() << " for "
+                     << output->tensor_data().size() << " bytes" << endl;
+                cerr << "f2 is from " << (void *)output2.tensor_data().data() << " for "
+                     << output2.tensor_data().size() << " bytes" << endl;
+                if (++errors > 100)
+                    break;
+            }
+        }
+    }
   }
 
  private:

@@ -42,7 +42,7 @@ EIGEN_DEVICE_FUNC inline Packet pexpand_bf16_u(const Packet& from) {
 
 // Specialization non-scalar version on non-sse.
 #ifndef EIGEN_VECTORIZE_SSE2
-#if 1
+#if defined(__arm__)
 template <typename Packet>
 EIGEN_DEVICE_FUNC inline Packet4f pexpand_bf16_l(const Packet4f& from) {
   float r[4];

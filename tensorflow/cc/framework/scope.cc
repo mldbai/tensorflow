@@ -26,7 +26,8 @@ Scope::Scope(Graph* graph, Status* status, Scope::NameMap* name_map)
     : graph_(graph),
       status_(status),
       name_map_(name_map),
-      scope_used_(nullptr) {}
+      scope_used_(nullptr),
+      colocation_constraints_(std::unordered_set<string>{}) {}
 
 Scope Scope::NewRootScope() {
   return Scope(new Graph(OpRegistry::Global()), new Status, new Scope::NameMap);

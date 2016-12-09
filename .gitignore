@@ -33,3 +33,4 @@ tensorflow/python/tensorflow_wrap.cxx
 tensorflow/python/tf_python.py
 tensorflow/cc/ops/no_op.cc
 tensorflow/cc/ops/no_op.h
+tensorflow/cc/ops/user_op.h

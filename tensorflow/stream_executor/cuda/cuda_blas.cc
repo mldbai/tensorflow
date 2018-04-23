@@ -22,7 +22,7 @@ limitations under the License.
 #include "cuda/include/cublas_v2.h"
 
 #if CUDA_VERSION >= 7050
-#define EIGEN_HAS_CUDA_FP16
+#define EIGEN_HAS_CUDA_FP16ss
 #endif
 
 #if CUDA_VERSION >= 8000
